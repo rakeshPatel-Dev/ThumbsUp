@@ -1,14 +1,22 @@
-import express from "express";
-import mainRoutes from "./src/routes/mainRoutes.js";
 import dotenv from "dotenv";
+
+import app from "./app.js";
 
 import connectDB from "./src/config/mongoose.config.js";
 
-const app = express();
-const port = process.env.Port || 3000;
+const port = 3000;
 
 dotenv.config();
-connectDB();
-app.use(express.json());
-app.use("/api", mainRoutes);
-app.listen(port, () => console.log(`Server is running on port ${port}`));
+
+const startServer = async () => {
+  try {
+    await connectDB();
+    app.listen(port, () => console.log(`Server is running on port ${port}`));
+  } catch (error) {
+    console.error("Error starting server:", error);
+    process.exit(1); // Exit the process with faiure
+  }
+
+  startServer();
+};
+// export default app;

@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-// import logger from "../utils/logger.js";
 
 export const authenticateToken = (req, res, next) => {
   try {
@@ -15,6 +14,7 @@ export const authenticateToken = (req, res, next) => {
         return res.status(403).json({ message: "Invalid or expired token." });
       }
       req.user = user;
+      console.log("Authenticated user:", user);
       next();
     });
   } catch (error) {
