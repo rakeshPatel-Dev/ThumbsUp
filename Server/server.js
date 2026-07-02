@@ -1,12 +1,11 @@
 import dotenv from "dotenv";
 
+dotenv.config();
 import app from "./app.js";
 
 import connectDB from "./src/config/mongoose.config.js";
 
 const port = 3000;
-
-dotenv.config();
 
 const startServer = async () => {
   try {
@@ -16,7 +15,6 @@ const startServer = async () => {
     console.error("Error starting server:", error);
     process.exit(1); // Exit the process with faiure
   }
-
-  startServer();
 };
+startServer();
 // export default app;

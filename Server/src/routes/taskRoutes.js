@@ -4,12 +4,17 @@ import {
   getTask,
   deleteTask,
   getTaskById,
+  updateTask,
 } from "../controller/taskController.js";
 import { authenticateToken } from "../middlewares/auth.js";
+import authorizeRoles from "../middlewares/role.middleware.js";
 
 const router = express.Router();
-router.post("/createTask", authenticateToken, createTask);
-router.get("/getTask", authenticateToken, getTask);
-router.get("/getTaskByID/:id", authenticateToken, getTaskById);
-router.delete("deleteTask/:id", authenticateToken, deleteTask);
+router.delete("/:id", authenticateToken, authorizeRoles("admin"), deleteTask);
+
+router.post("/", authenticateToken, createTask);
+
+router.get("/", authenticateToken, authorizeRoles("admin"), getTask);
+router.get("/:id", authenticateToken, getTaskById);
+router.put("/updateTask/:id", authenticateToken, updateTask);
 export default router;

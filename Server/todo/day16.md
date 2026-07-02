@@ -12,3 +12,10 @@
 - update app.js with alll the middlewares and create server.js with try catch function: the database should connect first before server being started.
     
 - create middlewares for roles, and auth
+
+
+task 2
+-pagenation
+
+-filteration
+
