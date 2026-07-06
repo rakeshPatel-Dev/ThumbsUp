@@ -147,15 +147,12 @@ export const getTask = async (req, res) => {
       if (endDate)   filter.createdAt.$lte = new Date(endDate);
     }
 
-    // ─── Pagination ──────────────────────────────────────────
     const pageNum  = Math.max(1, parseInt(page));
     const limitNum = Math.max(1, Math.min(100, parseInt(limit))); // cap at 100
     const skip     = (pageNum - 1) * limitNum;
 
-    // ─── Sort ────────────────────────────────────────────────
     const sort = { [sortBy]: sortOrder === "asc" ? 1 : -1 };
 
-    // ─── Queries (run in parallel for performance) ───────────
     const [tasks, total, stats] = await Promise.all([
       Task.find(filter)
         .populate("createdBy", "name email")
