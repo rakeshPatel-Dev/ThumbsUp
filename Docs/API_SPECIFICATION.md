@@ -113,7 +113,9 @@
     }
   }
 }
+
 ```
+
 Sets HTTP-Only cookie with JWT token
 
 **Error Responses:**
@@ -587,7 +589,7 @@ or
 
 **Success Response (200):**
 ```json
-{
+{x  
   "success": true,
   "statusCode": 200,
   "data": {

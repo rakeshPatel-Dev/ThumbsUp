@@ -123,7 +123,7 @@ export const getTask = async (req, res) => {
     // ─── Build Filter ────────────────────────────────────────
     const filter = {};
 
-    // Role-based filtering
+   
     if (req.user.role === "user") {
       filter.createdBy = req.user.id; // users only see their own tasks
     }
@@ -132,7 +132,7 @@ export const getTask = async (req, res) => {
     if (priority) filter.priority = priority;
     if (category) filter.category = category;
 
-    // Search in title or description
+   
     if (search) {
       filter.$or = [
         { title:       { $regex: search, $options: "i" } },
