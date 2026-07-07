@@ -1,19 +1,23 @@
 import express from "express";
-import mongoose from "mongoose";
 import {
-  registerUser,
-  loginUser,
-  logoutUser,
-} from "../controller/auth.controller.js";
+  Profile,
+  updateProfile,
+  getAllUsers,
+  updateUserRole,
+  suspendUser,
+} from "../controller/user.controller.js";
 import { authenticateToken } from "../middlewares/auth.js";
-import { Profile } from "../controller/user.conroller.js";
+import authorizeRoles from "../middlewares/role.middleware.js";
 
 const router = express.Router();
 
-router.post("/register", registerUser);
-router.post("/login", loginUser);
-router.get("/me", authenticateToken, Profile);
+// Profile endpoints
+router.get("/profile", authenticateToken, Profile);
+router.put("/profile", authenticateToken, updateProfile);
 
-router.post("/logout", authenticateToken, logoutUser);
+// Admin-only user management endpoints
+router.get("/", authenticateToken, authorizeRoles("admin"), getAllUsers);
+router.put("/:userId/role", authenticateToken, authorizeRoles("admin"), updateUserRole);
+router.put("/:userId/suspend", authenticateToken, authorizeRoles("admin"), suspendUser);
 
 export default router;
