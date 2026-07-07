@@ -17,7 +17,18 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["info", "warning", "error", "success"],
+      enum: [
+        "task_created",
+        "task_approved",
+        "task_rejected",
+        "task_completed",
+        "welcome",
+        "password_reset",
+        "info",
+        "warning",
+        "error",
+        "success"
+      ],
       required: true,
     },
     isRead: {
@@ -27,3 +38,6 @@ const notificationSchema = new mongoose.Schema(
   },
   { timestamps: true },
 );
+
+const Notification = mongoose.models.Notification || mongoose.model("Notification", notificationSchema);
+export default Notification;
