@@ -52,8 +52,8 @@ export const registerUser = async (req, res) => {
     });
     await newUser.save();
     return res.status(StatusCodes.CREATED).json(
-      { success: true, message: "User registered successfully" },
       {
+        success: true, message: "User registered successfully",
         data: {
           userId: newUser._id,
           email: newUser.email,
@@ -84,7 +84,7 @@ export const loginUser = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) {
       return res
-        .status(statusCodes.Unauthorized)
+        .status(statusCodes.UNAUTHORIZED)
         .json({ success: false, message: "Invalid credentials" });
     }
     const isMatch = await bcrypt.compare(password, user.password);
@@ -124,7 +124,6 @@ export const loginUser = async (req, res) => {
       token,
     });
   } catch (error) {
-    logger.error("Error logging in user:", error);
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
@@ -175,7 +174,7 @@ export const forgotPassword = async (req, res) => {
     }
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(statusCode.NotFound).json({
+      return res.status(statusCodes.NOT_FOUND).json({
         success: false,
         message: "User with this email does not exist",
       });
