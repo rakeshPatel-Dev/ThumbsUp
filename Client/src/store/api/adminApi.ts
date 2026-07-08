@@ -20,6 +20,10 @@ export const adminApi = apiSlice.injectEndpoints({
             ]
           : [{ type: "Log", id: "LIST" }],
     }),
+    getAnalytics: builder.query({
+      query: () => "/admin/analytics",
+      providesTags: ["Dashboard"],
+    }),
   }),
   overrideExisting: false,
 });
@@ -27,4 +31,5 @@ export const adminApi = apiSlice.injectEndpoints({
 export const {
   useGetDashboardStatsQuery,
   useGetSystemLogsQuery,
+  useGetAnalyticsQuery,
 } = adminApi;

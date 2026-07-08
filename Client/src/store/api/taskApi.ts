@@ -18,7 +18,7 @@ export const taskApi = apiSlice.injectEndpoints({
     }),
     getTaskById: builder.query({
       query: (id) => `/tasks/${id}`,
-      providesTags: (result, error, id) => [{ type: "Task", id }],
+      providesTags: (_result, _error, id) => [{ type: "Task", id }],
     }),
     createTask: builder.mutation({
       query: (taskData) => ({
@@ -37,7 +37,7 @@ export const taskApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: taskData,
       }),
-      invalidatesTags: (result, error, { id }) => [
+      invalidatesTags: (_result, _error, { id }) => [
         { type: "Task", id },
         { type: "Task", id: "LIST" },
         "Dashboard", // status updates (approved, completed, rejected) update dashboard stats
@@ -49,7 +49,7 @@ export const taskApi = apiSlice.injectEndpoints({
         url: `/tasks/${id}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, id) => [
+      invalidatesTags: (_result, _error, id) => [
         { type: "Task", id },
         { type: "Task", id: "LIST" },
         "Dashboard",

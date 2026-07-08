@@ -34,7 +34,7 @@ export const userApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: { role },
       }),
-      invalidatesTags: (result, error, { userId }) => [
+      invalidatesTags: (_result, _error, { userId }) => [
         { type: "User", id: userId },
         { type: "User", id: "LIST" },
         "Dashboard", // Role changes might update admin stats
@@ -46,7 +46,7 @@ export const userApi = apiSlice.injectEndpoints({
         method: "PUT",
         body: { action }, // "suspend" or "unsuspend"
       }),
-      invalidatesTags: (result, error, { userId }) => [
+      invalidatesTags: (_result, _error, { userId }) => [
         { type: "User", id: userId },
         { type: "User", id: "LIST" },
         "Dashboard", // Suspension updates dashboard active status count

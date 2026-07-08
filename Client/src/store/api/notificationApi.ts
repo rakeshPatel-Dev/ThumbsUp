@@ -24,7 +24,7 @@ export const notificationApi = apiSlice.injectEndpoints({
         url: `/notifications/${notificationId}/read`,
         method: "PUT",
       }),
-      invalidatesTags: (result, error, notificationId) => [
+      invalidatesTags: (_result, _error, notificationId) => [
         { type: "Notification", id: notificationId },
         { type: "Notification", id: "LIST" },
       ],
@@ -41,10 +41,17 @@ export const notificationApi = apiSlice.injectEndpoints({
         url: `/notifications/${notificationId}`,
         method: "DELETE",
       }),
-      invalidatesTags: (result, error, notificationId) => [
+      invalidatesTags: (_result, _error, notificationId) => [
         { type: "Notification", id: notificationId },
         { type: "Notification", id: "LIST" },
       ],
+    }),
+    deleteAllNotifications: builder.mutation({
+      query: () => ({
+        url: "/notifications",
+        method: "DELETE",
+      }),
+      invalidatesTags: [{ type: "Notification", id: "LIST" }],
     }),
   }),
   overrideExisting: false,
@@ -55,4 +62,5 @@ export const {
   useMarkNotificationReadMutation,
   useMarkAllNotificationsReadMutation,
   useDeleteNotificationMutation,
+  useDeleteAllNotificationsMutation,
 } = notificationApi;
