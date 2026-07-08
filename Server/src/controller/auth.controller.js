@@ -218,6 +218,7 @@ export const loginUser = async (req, res) => {
       statusCode: StatusCodes.OK,
       message: "Login successful",
       data: {
+        accessToken,
         user: {
           id: user._id,
           name: user.name,
@@ -315,6 +316,13 @@ export const refreshToken = async (req, res) => {
       message: "Token refreshed",
       data: {
         accessToken: newAccessToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          isEmailVerified: user.isEmailVerified,
+        },
       },
     });
   } catch (error) {

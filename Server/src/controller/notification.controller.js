@@ -153,3 +153,22 @@ export const deleteNotification = async (req, res) => {
     });
   }
 };
+
+export const deleteAllNotifications = async (req, res) => {
+  try {
+    const result = await Notification.deleteMany({ userId: req.user.id });
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "All notifications deleted",
+    });
+  } catch (error) {
+    console.error("Delete All Notifications Error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: "Internal Server Error",
+    });
+  }
+};

@@ -1,7 +1,7 @@
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import express from "express";
-import mainRoutes from "./src/routes/mainRoutes.js";
+import mainRoutes from "./src/routes/main.routes.js";
 import { requestLogger } from "./src/middlewares/logger.middleware.js";
 import { StatusCodes } from "http-status-codes";
 

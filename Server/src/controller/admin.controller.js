@@ -67,7 +67,7 @@ export const getDashboardStats = async (req, res) => {
       const year = d.getFullYear();
       const month = d.getMonth(); // 0-indexed
       labels.push(monthNames[month]);
-      
+
       monthsData.push({
         year,
         month,
@@ -248,9 +248,9 @@ export const getSystemLogs = async (req, res) => {
     const formattedLogs = logs.map((log) => ({
       user: log.userId
         ? {
-            id: log.userId._id,
-            name: log.userId.name,
-          }
+          id: log.userId._id,
+          name: log.userId.name,
+        }
         : null,
       action: log.action,
       entityType: log.entityType,

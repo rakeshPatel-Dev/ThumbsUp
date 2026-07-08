@@ -1,9 +1,9 @@
 import express from "express";
-import authRoutes from "./authRoutes.js";
-import userRoutes from "./userRoutes.js";
-import taskRoutes from "./taskRoutes.js";
-import notificationRoutes from "./notificationRoutes.js";
-import adminRoutes from "./adminRoutes.js";
+import authRoutes from "./auth.routes.js";
+import userRoutes from "./user.routes.js";
+import taskRoutes from "./task.routes.js";
+import notificationRoutes from "./notification.routes.js";
+import adminRoutes from "./admin.routes.js";
 
 const router = express.Router();
 

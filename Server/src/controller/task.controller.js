@@ -22,6 +22,15 @@ const createNotification = async (userId, title, message, type) => {
 // POST /api/tasks
 export const createTask = async (req, res) => {
   try {
+    // Only employees can create tasks
+    if (req.user.role !== "employee") {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: "Only employees can create tasks.",
+      });
+    }
+
     const { title, description, priority = "medium", deadline, category, attachmentUrl } = req.body;
 
     // Validate required fields
@@ -49,11 +58,11 @@ export const createTask = async (req, res) => {
       });
     }
 
-    if (priority && !["low", "medium", "high"].includes(priority)) {
+    if (priority && !["low", "medium", "high", "critical"].includes(priority)) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Priority must be low, medium, or high",
+        message: "Priority must be low, medium, high, or critical",
       });
     }
 
@@ -382,11 +391,11 @@ export const updateTask = async (req, res) => {
       }
 
       if (priority !== undefined) {
-        if (!["low", "medium", "high"].includes(priority)) {
+        if (!["low", "medium", "high", "critical"].includes(priority)) {
           return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             statusCode: StatusCodes.BAD_REQUEST,
-            message: "Priority must be low, medium, or high",
+            message: "Priority must be low, medium, high, or critical",
           });
         }
         changes.priority = priority;
@@ -437,7 +446,7 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    // If Manager or Admin: Can update status (approved, rejected, completed)
+    // If Manager or Admin: Can update status (any valid status, for Kanban drag-and-drop)
     if (isManagerOrAdmin) {
       const { status, rejectionReason } = req.body;
 
@@ -449,41 +458,41 @@ export const updateTask = async (req, res) => {
         });
       }
 
-      if (!["approved", "rejected", "completed"].includes(status)) {
+      if (!["pending", "approved", "rejected", "completed"].includes(status)) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           statusCode: StatusCodes.BAD_REQUEST,
-          message: "Invalid status. Must be approved, rejected, or completed.",
+          message: "Invalid status. Must be pending, approved, rejected, or completed.",
         });
       }
 
       const changes = { oldStatus: task.status, newStatus: status };
 
       if (status === "rejected") {
-        if (!rejectionReason || rejectionReason.trim() === "") {
-          return res.status(StatusCodes.BAD_REQUEST).json({
-            success: false,
-            statusCode: StatusCodes.BAD_REQUEST,
-            message: "Rejection reason is required when rejecting a task",
-          });
+        // Rejection reason is optional - use provided one or keep existing
+        if (rejectionReason && rejectionReason.trim() !== "") {
+          task.rejectionReason = rejectionReason.trim();
+          changes.rejectionReason = rejectionReason.trim();
+        } else if (!task.rejectionReason) {
+          task.rejectionReason = "Rejected by manager";
         }
-        task.rejectionReason = rejectionReason;
-        changes.rejectionReason = rejectionReason;
       } else {
-        task.rejectionReason = null; // Clear if approved or completed
+        task.rejectionReason = null; // Clear for non-rejected statuses
       }
 
       task.status = status;
-      task.approvedBy = req.user.id;
+      task.approvedBy = status !== "pending" ? req.user.id : null;
       await task.save();
 
       await logActivity(req.user.id, `TASK_${status.toUpperCase()}`, "Task", task._id.toString(), changes, req);
 
-      // Notify the creator of the status change
-      const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
-      const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${rejectionReason}` : ""}`;
-      const notifType = `task_${status}`;
-      await createNotification(task.createdBy, notifTitle, notifMessage, notifType);
+      // Notify the creator of the status change (only for non-pending transitions)
+      if (status !== "pending") {
+        const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+        const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${task.rejectionReason}` : ""}`;
+        const notifType = `task_${status}`;
+        await createNotification(task.createdBy, notifTitle, notifMessage, notifType);
+      }
 
       return res.status(StatusCodes.OK).json({
         success: true,
