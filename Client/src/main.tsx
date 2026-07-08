@@ -6,15 +6,16 @@ import { Toaster } from 'sonner';
 import { TooltipProvider } from './components/ui/tooltip.tsx';
 import { Provider } from 'react-redux';
 import { store } from './store/store';
+import { AuthInitializer } from './components/auth/AuthInitializer.tsx';
 
 createRoot(document.getElementById('root')!).render(
   <Provider store={store}>
     <BrowserRouter>
       <TooltipProvider>
+        <AuthInitializer />
         <Toaster position="top-right"/>
         <App />
       </TooltipProvider>
     </BrowserRouter>
   </Provider>
 )
-
