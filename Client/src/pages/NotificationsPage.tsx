@@ -51,7 +51,7 @@ export function NotificationsPage() {
   const handleNotificationClick = async (n: any) => {
     if (!n.isRead) {
       try {
-        await markRead(n._id).unwrap();
+        await markRead(n.id).unwrap();
       } catch {
         // silently ignore error
       }
@@ -83,7 +83,7 @@ export function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
+      <div className="flex flex-col items-center justify-center min-h-75 gap-3">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <p className="text-sm text-muted-foreground">Loading notifications...</p>
       </div>
@@ -162,7 +162,7 @@ export function NotificationsPage() {
         ) : (
           filteredNotifications.map((n: any) => (
             <div
-              key={n._id}
+              key={n.id}
               onClick={() => handleNotificationClick(n)}
               className={cn(
                 'flex items-start gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer group relative',
@@ -170,7 +170,7 @@ export function NotificationsPage() {
               )}
             >
               <div className={cn(
-                'h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5',
+                'h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-0.5',
                 !n.isRead ? 'bg-primary/20 text-primary' : 'bg-muted text-muted-foreground'
               )}>
                 <MessageSquare className="h-4 w-4" />

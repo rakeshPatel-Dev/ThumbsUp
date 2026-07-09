@@ -9,7 +9,7 @@ import { useGetUsersQuery, useUpdateUserRoleMutation, useSuspendUserMutation } f
 type UserRole = 'employee' | 'manager' | 'admin';
 
 interface AppUser {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   role: UserRole;
@@ -164,7 +164,7 @@ export function UsersPage() {
 
               {!isLoading && users.map((user) => (
                 <tr
-                  key={user._id}
+                  key={user.id}
                   className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
                 >
                   {/* Name */}
@@ -192,7 +192,7 @@ export function UsersPage() {
                     <div className="relative inline-block">
                       <select
                         value={user.role}
-                        onChange={(e) => handleRoleChange(user._id, e.target.value as UserRole)}
+                        onChange={(e) => handleRoleChange(user.id, e.target.value as UserRole)}
                         className={`appearance-none rounded-full border px-3 py-1 text-xs font-mono font-medium pr-6 focus:outline-none cursor-pointer ${ROLE_COLORS[user.role]}`}
                       >
                         <option value="employee">Employee</option>

@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface TaskItem {
-  _id: string;
+  id: string;
   title: string;
   status: string;
   priority: string;
@@ -33,7 +33,7 @@ interface StatCardProps {
 function StatCard({ label, value, icon, color, bgColor }: StatCardProps) {
   return (
     <div className="bg-card border border-border rounded-xl p-5 flex items-start gap-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className={cn('h-12 w-12 rounded-xl flex items-center justify-center flex-shrink-0', bgColor)}>
+      <div className={cn('h-12 w-12 rounded-xl flex items-center justify-center shrink-0', bgColor)}>
         <span className={color}>{icon}</span>
       </div>
       <div className="min-w-0">
@@ -90,7 +90,7 @@ export function EmployeeDashboard() {
       {tasksLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
-            <div key={i} className="bg-card border border-border rounded-xl p-5 h-[88px] animate-pulse" />
+            <div key={i} className="bg-card border border-border rounded-xl p-5 h-22 animate-pulse" />
           ))}
         </div>
       ) : (
@@ -151,8 +151,8 @@ export function EmployeeDashboard() {
             ) : (
               recentTasks.map((task) => (
                 <Link
-                  key={task._id}
-                  to={`/tasks/${task._id}`}
+                  key={task.id}
+                  to={`/tasks/${task.id}`}
                   className="flex items-center gap-3 px-5 py-3.5 hover:bg-muted/40 transition-colors group"
                 >
                   <div className="flex-1 min-w-0">
@@ -165,7 +165,7 @@ export function EmployeeDashboard() {
                       </p>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <PriorityBadge priority={task.priority} />
                     <StatusBadge status={task.status} />
                   </div>
@@ -199,9 +199,9 @@ export function EmployeeDashboard() {
                   No notifications
                 </div>
               ) : (
-                notifications.slice(0, 4).map((n: { _id: string; message: string; isRead: boolean; createdAt: string }) => (
+                notifications.slice(0, 4).map((n: { id: string; message: string; isRead: boolean; createdAt: string }) => (
                   <div
-                    key={n._id}
+                    key={n.id}
                     className={cn(
                       'px-5 py-3',
                       !n.isRead && 'bg-primary/5'
@@ -229,8 +229,8 @@ export function EmployeeDashboard() {
               <div className="space-y-2">
                 {overdueTasks.slice(0, 3).map((t) => (
                   <Link
-                    key={t._id}
-                    to={`/tasks/${t._id}`}
+                    key={t.id}
+                    to={`/tasks/${t.id}`}
                     className="block text-xs text-destructive hover:underline truncate"
                   >
                     {t.title}

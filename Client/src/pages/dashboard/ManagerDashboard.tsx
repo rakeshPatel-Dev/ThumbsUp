@@ -14,15 +14,15 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
 interface TaskItem {
-  _id: string;
+  id: string;
   title: string;
   description?: string;
   status: string;
   priority: string;
   deadline?: string;
   createdAt: string;
-  createdBy?: { name: string; _id: string };
-  assignedTo?: { name: string; _id: string };
+  createdBy?: { name: string; id: string };
+  assignedTo?: { name: string; id: string };
 }
 
 export function ManagerDashboard() {
@@ -134,10 +134,10 @@ export function ManagerDashboard() {
               </div>
             ) : (
               pendingTasks.slice(0, 8).map((task) => (
-                <div key={task._id} className="px-5 py-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
+                <div key={task.id} className="px-5 py-4 flex items-start gap-4 hover:bg-muted/30 transition-colors">
                   <div className="flex-1 min-w-0">
                     <Link
-                      to={`/tasks/${task._id}`}
+                      to={`/tasks/${task.id}`}
                       className="text-sm font-medium text-foreground hover:text-primary transition-colors truncate block"
                     >
                       {task.title}
@@ -159,12 +159,12 @@ export function ManagerDashboard() {
                       )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
                     <Button
                       size="sm"
                       variant="outline"
                       className="h-8 text-success border-success/30 hover:bg-success/10"
-                      onClick={() => handleApprove(task._id)}
+                      onClick={() => handleApprove(task.id)}
                       disabled={updating}
                     >
                       <Check className="h-3.5 w-3.5 mr-1" />
@@ -174,7 +174,7 @@ export function ManagerDashboard() {
                       size="sm"
                       variant="outline"
                       className="h-8 text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => handleReject(task._id)}
+                      onClick={() => handleReject(task.id)}
                       disabled={updating}
                     >
                       <X className="h-3.5 w-3.5 mr-1" />
@@ -223,9 +223,9 @@ export function ManagerDashboard() {
               <h2 className="font-heading font-semibold text-foreground">Team Members</h2>
             </div>
             <div className="divide-y divide-border">
-              {employees.slice(0, 5).map((emp: { _id: string; name: string; email: string; role: string }) => (
-                <div key={emp._id} className="flex items-center gap-3 px-5 py-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm flex-shrink-0">
+              {employees.slice(0, 5).map((emp: { id: string; name: string; email: string; role: string }) => (
+                <div key={emp.id} className="flex items-center gap-3 px-5 py-3">
+                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm shrink-0">
                     {emp.name?.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
