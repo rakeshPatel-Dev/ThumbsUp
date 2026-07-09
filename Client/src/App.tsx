@@ -5,6 +5,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 // Auth Pages
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { RegisterPage } from '@/pages/auth/RegisterPage';
+import  EmailVerificationSuccess  from '@/pages/auth/EmailVerified';
 
 // Dashboards
 import { DashboardRouter } from '@/pages/dashboard/DashboardRouter';
@@ -31,6 +32,7 @@ function App() {
       {/* Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/email-verified-success" element={<EmailVerificationSuccess />} />
 
       {/* Protected Routes (Authenticated users only) */}
       <Route element={<ProtectedRoute />}>
