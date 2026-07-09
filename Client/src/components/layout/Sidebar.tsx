@@ -14,7 +14,6 @@ import {
   Users,
   BarChart3,
   ScrollText,
-  Kanban,
   LogOut,
   ChevronRight,
 } from 'lucide-react';

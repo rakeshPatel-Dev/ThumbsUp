@@ -266,14 +266,3 @@ select:focus-visible {
   border-color: var(--primary) !important;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent) !important;
 }
-
-/* ─── Kanban ────────────────────────────────────────────────────────────── */
-.kanban-card-dragging {
-  opacity: 0.5;
-  transform: rotate(2deg);
-}
-
-.kanban-drop-target {
-  border: 2px dashed var(--primary) !important;
-  background: color-mix(in srgb, var(--primary) 5%, transparent);
-}

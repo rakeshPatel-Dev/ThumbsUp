@@ -20,7 +20,7 @@ import { ProfilePage } from '@/pages/ProfilePage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 
 // Admin Pages
-import { KanbanPage } from '@/pages/admin/KanbanPage';
+
 import { UsersPage } from '@/pages/admin/UsersPage';
 import { AnalyticsPage } from '@/pages/admin/AnalyticsPage';
 import { LogsPage } from '@/pages/admin/LogsPage';
@@ -53,7 +53,7 @@ function App() {
 
           {/* Admin Specific Routes (Admin role only) */}
           <Route element={<ProtectedRoute allowedRoles={['admin']} />}>
-            <Route path="/admin/kanban" element={<KanbanPage />} />
+
             <Route path="/admin/users" element={<UsersPage />} />
             <Route path="/admin/analytics" element={<AnalyticsPage />} />
             <Route path="/admin/logs" element={<LogsPage />} />
