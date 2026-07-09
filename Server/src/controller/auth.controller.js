@@ -7,6 +7,7 @@ import jwt from "jsonwebtoken";
 import validator from "validator";
 import { StatusCodes } from "http-status-codes";
 import crypto from "crypto";
+import { sendEmailVerificationEmail } from "../services/email.service.js";
 
 const saltRounds = 10;
 
@@ -104,7 +105,14 @@ export const registerUser = async (req, res) => {
     // Log the action
     await logActivity(newUser._id, "USER_REGISTER", "User", newUser._id.toString(), { email, name, role }, req);
 
-    console.log(`[Email Mock] Verification link for ${email}: http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`);
+    // console.log(`[Email Mock] Verification link for ${email}: http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`);
+
+    const verificationLink = `http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`;
+
+    // Send verification email
+    await sendEmailVerificationEmail(email, verificationLink).catch((error) => {
+      console.error(`Error sending verification email to ${email}:`, error);
+    });
 
     return res.status(StatusCodes.CREATED).json({
       success: true,
@@ -464,7 +472,8 @@ export const resetPassword = async (req, res) => {
 // POST /api/auth/verify-email
 export const verifyEmail = async (req, res) => {
   try {
-    const { token } = req.body;
+    // the token can be sent in the query params or in the body
+    const token = req.query.token || req.body.token;
     if (!token) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
@@ -503,6 +512,12 @@ export const verifyEmail = async (req, res) => {
     await verificationTokenDoc.save();
 
     await logActivity(user._id, "EMAIL_VERIFIED", "User", user._id.toString(), {}, req);
+
+    // Delete all email verification tokens for the user
+    await EmailVerificationToken.deleteMany({ userId: user._id });
+
+    // redirect to a success page or send a success response
+    res.redirect('http://localhost:5173/email-verified-success'); // Adjust the URL as needed
 
     return res.status(StatusCodes.OK).json({
       success: true,
