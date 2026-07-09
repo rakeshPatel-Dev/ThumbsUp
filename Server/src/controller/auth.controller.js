@@ -93,7 +93,7 @@ export const registerUser = async (req, res) => {
     // Create Email Verification Token
     const verificationTokenStr = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-    
+
     const verificationToken = new EmailVerificationToken({
       userId: newUser._id,
       token: verificationTokenStr,
@@ -180,7 +180,7 @@ export const loginUser = async (req, res) => {
 
     // Generate accessToken
     const accessToken = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: "5h" }
     );
@@ -246,7 +246,7 @@ export const logoutUser = async (req, res) => {
       await User.findByIdAndUpdate(req.user.id, { refreshToken: null });
       await logActivity(req.user.id, "USER_LOGOUT", "User", req.user.id, {}, req);
     }
-    
+
     res.clearCookie("token", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -257,7 +257,7 @@ export const logoutUser = async (req, res) => {
       secure: process.env.NODE_ENV === "production",
       sameSite: "Strict",
     });
-    
+
     return res.status(StatusCodes.OK).json({
       success: true,
       statusCode: StatusCodes.OK,
@@ -297,7 +297,7 @@ export const refreshToken = async (req, res) => {
     }
 
     const newAccessToken = jwt.sign(
-      { id: user._id, email: user.email, role: user.role },
+      { id: user._id, email: user.email, role: user.role, name: user.name },
       process.env.JWT_SECRET,
       { expiresIn: "5h" }
     );
