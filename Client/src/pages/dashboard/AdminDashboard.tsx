@@ -5,8 +5,8 @@ import { useGetTasksQuery } from '@/store/api/taskApi';
 import { StatusBadge } from '@/components/common/StatusBadge';
 import { buttonVariants } from '@/components/ui/button';
 import {
-  Users, ClipboardList, CheckCircle2, Clock, AlertCircle,
-  TrendingUp, ArrowRight, Kanban, ScrollText, BarChart3,
+  Users, ClipboardList, CheckCircle2, Clock,
+  TrendingUp, ArrowRight, ScrollText, BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
