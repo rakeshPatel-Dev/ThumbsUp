@@ -1,5 +1,6 @@
 import Task from "../models/Task.js";
 import Notification from "../models/Notifications.js";
+import User from "../models/User.js";
 import { logActivity } from "../utils/activityLogger.js";
 import { StatusCodes } from "http-status-codes";
 
@@ -104,8 +105,19 @@ export const createTask = async (req, res) => {
     // Log activity
     await logActivity(req.user.id, "TASK_CREATE", "Task", task._id.toString(), { title, priority }, req);
 
+    console.log(`User ${req.user.id} and name ${req.user.name} . User = ${JSON.stringify(req.user)}`);
+
     // Notify managers
-    // In a real application, we might find managers and send them notifications.
+    const managers = await User.find({ role: "manager" });
+    for (const manager of managers) {
+      await createNotification(
+        manager._id,
+        "New Task",
+        `A new task "${task.title}" has been created by ${req.user.name}.`,
+        "task_created"
+      );
+    }
+
     // For now, let's also log a notification info
     return res.status(StatusCodes.CREATED).json({
       success: true,
@@ -224,17 +236,17 @@ export const getTask = async (req, res) => {
       attachmentUrl: t.attachmentUrl,
       createdBy: t.createdBy
         ? {
-            id: t.createdBy._id,
-            name: t.createdBy.name,
-            email: t.createdBy.email,
-          }
+          id: t.createdBy._id,
+          name: t.createdBy.name,
+          email: t.createdBy.email,
+        }
         : null,
       approvedBy: t.approvedBy
         ? {
-            id: t.approvedBy._id,
-            name: t.approvedBy.name,
-            email: t.approvedBy.email,
-          }
+          id: t.approvedBy._id,
+          name: t.approvedBy.name,
+          email: t.approvedBy.email,
+        }
         : null,
       rejectionReason: t.rejectionReason,
       createdAt: t.createdAt,
@@ -309,10 +321,10 @@ export const getTaskById = async (req, res) => {
           },
           approvedBy: task.approvedBy
             ? {
-                id: task.approvedBy._id,
-                name: task.approvedBy.name,
-                email: task.approvedBy.email,
-              }
+              id: task.approvedBy._id,
+              name: task.approvedBy.name,
+              email: task.approvedBy.email,
+            }
             : null,
           rejectionReason: task.rejectionReason,
           createdAt: task.createdAt,
@@ -343,10 +355,11 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    const isManagerOrAdmin = ["manager", "admin"].includes(req.user.role);
+    const { status, title, description, priority, deadline, category, attachmentUrl, rejectionReason } = req.body;
 
-    // If Employee: Can only update pending tasks that they created
+    // 1. Employee Role Path
     if (req.user.role === "employee") {
+      // Must be the owner of the task
       if (task.createdBy.toString() !== req.user.id) {
         return res.status(StatusCodes.FORBIDDEN).json({
           success: false,
@@ -355,15 +368,44 @@ export const updateTask = async (req, res) => {
         });
       }
 
+      // Case A: Employee wants to update status (only marking it completed is allowed, and only if approved)
+      if (status !== undefined) {
+        if (status !== "completed") {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            statusCode: StatusCodes.BAD_REQUEST,
+            message: "Employees can only transition tasks to 'completed' status.",
+          });
+        }
+        if (task.status !== "approved") {
+          return res.status(StatusCodes.BAD_REQUEST).json({
+            success: false,
+            statusCode: StatusCodes.BAD_REQUEST,
+            message: "Tasks can only be marked as completed if they are in 'approved' status.",
+          });
+        }
+
+        task.status = "completed";
+        await task.save();
+        await logActivity(req.user.id, "TASK_COMPLETED", "Task", task._id.toString(), { oldStatus: "approved", newStatus: "completed" }, req);
+
+        return res.status(StatusCodes.OK).json({
+          success: true,
+          statusCode: StatusCodes.OK,
+          message: "Task marked as completed",
+          data: { task },
+        });
+      }
+
+      // Case B: Employee wants to update task details (only allowed if pending)
       if (task.status !== "pending") {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           statusCode: StatusCodes.BAD_REQUEST,
-          message: "You can only update tasks in pending status.",
+          message: "You can only edit task details in pending status.",
         });
       }
 
-      const { title, description, priority, deadline, category, attachmentUrl } = req.body;
       const changes = {};
 
       if (title !== undefined) {
@@ -446,30 +488,36 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    // If Manager or Admin: Can update status (any valid status, for Kanban drag-and-drop)
-    if (isManagerOrAdmin) {
-      const { status, rejectionReason } = req.body;
-
-      if (!status) {
+    // 2. Manager Role Path (Can only approve or reject)
+    if (req.user.role === "manager") {
+      if (status === undefined) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           statusCode: StatusCodes.BAD_REQUEST,
-          message: "Status field is required for manager/admin updates",
+          message: "Managers can only update the status of a task.",
         });
       }
 
-      if (!["pending", "approved", "rejected", "completed"].includes(status)) {
+      if (!["approved", "rejected"].includes(status)) {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           statusCode: StatusCodes.BAD_REQUEST,
-          message: "Invalid status. Must be pending, approved, rejected, or completed.",
+          message: "Managers can only approve or reject tasks.",
+        });
+      }
+
+      // Can only approve or reject tasks that are currently pending
+      if (task.status !== "pending") {
+        return res.status(StatusCodes.BAD_REQUEST).json({
+          success: false,
+          statusCode: StatusCodes.BAD_REQUEST,
+          message: "Managers can only approve or reject tasks in pending status.",
         });
       }
 
       const changes = { oldStatus: task.status, newStatus: status };
 
       if (status === "rejected") {
-        // Rejection reason is optional - use provided one or keep existing
         if (rejectionReason && rejectionReason.trim() !== "") {
           task.rejectionReason = rejectionReason.trim();
           changes.rejectionReason = rejectionReason.trim();
@@ -477,36 +525,35 @@ export const updateTask = async (req, res) => {
           task.rejectionReason = "Rejected by manager";
         }
       } else {
-        task.rejectionReason = null; // Clear for non-rejected statuses
+        task.rejectionReason = null;
       }
 
       task.status = status;
-      task.approvedBy = status !== "pending" ? req.user.id : null;
+      task.approvedBy = req.user.id;
       await task.save();
 
       await logActivity(req.user.id, `TASK_${status.toUpperCase()}`, "Task", task._id.toString(), changes, req);
 
-      // Notify the creator of the status change (only for non-pending transitions)
-      if (status !== "pending") {
-        const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
-        const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${task.rejectionReason}` : ""}`;
-        const notifType = `task_${status}`;
-        await createNotification(task.createdBy, notifTitle, notifMessage, notifType);
-      }
+      const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
+      const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${task.rejectionReason}` : ""}`;
+      const notifType = `task_${status}`;
+      await createNotification(task.createdBy, notifTitle, notifMessage, notifType);
 
       return res.status(StatusCodes.OK).json({
         success: true,
         statusCode: StatusCodes.OK,
-        message: "Task updated successfully",
+        message: `Task ${status} successfully`,
         data: { task },
       });
     }
 
+    // 3. Admin / Other Roles Path (Admin cannot update status/details anyhow)
     return res.status(StatusCodes.FORBIDDEN).json({
       success: false,
       statusCode: StatusCodes.FORBIDDEN,
-      message: "Insufficient permissions.",
+      message: "Access denied. Admin cannot update task details or status.",
     });
+
   } catch (error) {
     console.error("Update Task Error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -530,23 +577,21 @@ export const deleteTask = async (req, res) => {
       });
     }
 
-    // Role-based logic
-    if (req.user.role === "employee") {
-      if (task.createdBy.toString() !== req.user.id) {
-        return res.status(StatusCodes.FORBIDDEN).json({
-          success: false,
-          statusCode: StatusCodes.FORBIDDEN,
-          message: "Access denied. You can only delete your own tasks.",
-        });
-      }
+    // Only employees who created the task can delete it
+    if (req.user.role !== "employee" || task.createdBy.toString() !== req.user.id) {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: "Access denied. Only the task creator can delete it.",
+      });
+    }
 
-      if (task.status !== "pending") {
-        return res.status(StatusCodes.BAD_REQUEST).json({
-          success: false,
-          statusCode: StatusCodes.BAD_REQUEST,
-          message: "You can only delete tasks in pending status.",
-        });
-      }
+    if (task.status !== "pending") {
+      return res.status(StatusCodes.BAD_REQUEST).json({
+        success: false,
+        statusCode: StatusCodes.BAD_REQUEST,
+        message: "You can only delete tasks in pending status.",
+      });
     }
 
     // Soft delete
