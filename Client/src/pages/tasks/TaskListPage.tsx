@@ -11,6 +11,7 @@ import {
   ArrowUpDown,
   AlertCircle,
   Search,
+  X,
 } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 import { useGetTasksQuery } from '@/store/api/taskApi';
@@ -132,7 +133,7 @@ function TaskCard({ task }: { task: Task }) {
           {deadlineStr}
         </span>
         {task.createdBy?.name && (
-          <span className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-[130px]">
+          <span className="flex items-center gap-1 text-xs text-muted-foreground truncate max-w-33">
             <User2 className="size-3 shrink-0" />
             <span className="truncate">{task.createdBy.name}</span>
           </span>
@@ -173,6 +174,14 @@ export function TaskListPage() {
     return params;
   }, [statusFilter, priorityFilter, searchQuery, sortField, page]);
 
+  const clearFilters = () => {
+    setStatusFilter('all');
+    setPriorityFilter('all');
+    setSearchQuery('');
+    setSortField('createdAt_desc');
+    setPage(1);
+  }
+
   const { data, isLoading, isError, error } = useGetTasksQuery(queryParams);
 
   const tasks: Task[] = data?.data?.tasks ?? [];
@@ -205,7 +214,7 @@ export function TaskListPage() {
 
       {/* Filter Bar */}
       <div className="flex flex-wrap gap-3 items-center bg-card border border-border rounded-xl px-4 py-3">
-        <div className="relative flex-1 min-w-[180px] max-w-xs">
+        <div className="relative flex-1 min-w-45 max-w-xs">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
           <Input
             placeholder="Search tasks…"
@@ -225,7 +234,7 @@ export function TaskListPage() {
             resetPage();
           }}
         >
-          <SelectTrigger size="sm" className="min-w-[130px]">
+          <SelectTrigger size="sm" className="min-w-33">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -244,7 +253,7 @@ export function TaskListPage() {
             resetPage();
           }}
         >
-          <SelectTrigger size="sm" className="min-w-[130px]">
+          <SelectTrigger size="sm" className="min-w-33">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -263,7 +272,7 @@ export function TaskListPage() {
             resetPage();
           }}
         >
-          <SelectTrigger size="sm" className="min-w-[160px]">
+          <SelectTrigger size="sm" className="min-w-40">
             <ArrowUpDown className="size-3.5 text-muted-foreground" />
             <SelectValue placeholder="Sort by" />
           </SelectTrigger>
@@ -273,6 +282,16 @@ export function TaskListPage() {
             <SelectItem value="deadline_asc">Deadline (Soonest)</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 shrink-0"
+          onClick={clearFilters}
+        >
+          <X className="size-3.5" />
+          Clear Filters
+        </Button>
       </div>
 
       {/* Task Grid / States */}
