@@ -193,13 +193,12 @@ export function TaskDetailsPage() {
 
   const task: Task = data.data.task;
 
-  const isManager = user?.role === 'manager' || user?.role === 'admin';
+  const isManager = user?.role === 'manager';
   const isOwner = task.createdBy?.id === user?.id;
   const canEdit = isOwner && task.status === 'pending';
   const canDelete = isOwner && task.status === 'pending';
   const canMarkComplete = isOwner && task.status === 'approved';
   const canApproveReject = isManager && task.status === 'pending';
-  const canManagerComplete = isManager && task.status === 'approved';
 
   const deadlineDate = task.deadline ? parseISO(task.deadline) : null;
   const deadlineStr =
@@ -385,18 +384,7 @@ export function TaskDetailsPage() {
           </>
         )}
 
-        {/* Manager: Mark Complete on approved tasks */}
-        {canManagerComplete && (
-          <Button
-            size="sm"
-            className="gap-2"
-            disabled={isUpdating}
-            onClick={() => handleStatusChange('completed')}
-          >
-            <CheckCircle2 className="size-4" />
-            Mark Complete
-          </Button>
-        )}
+
 
         {/* Employee: Mark Complete */}
         {canMarkComplete && (
