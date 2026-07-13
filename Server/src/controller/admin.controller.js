@@ -171,6 +171,7 @@ export const getDashboardStats = async (req, res) => {
       completedCounts.push(m.completed);
       newUsersCounts.push(m.newUsers);
     });
+    
 
     return res.status(StatusCodes.OK).json({
       success: true,
