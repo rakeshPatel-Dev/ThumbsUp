@@ -7,12 +7,22 @@ import jwt from "jsonwebtoken";
 import validator from "validator";
 import { StatusCodes } from "http-status-codes";
 import crypto from "crypto";
-import { sendEmailVerificationEmail } from "../services/email.service.js";
+import {
+  sendEmailVerificationEmail,
+  sendRegistrationEmail,
+  sendLoginNotificationEmail,
+} from "../services/email.service.js";
+
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173/api"; // Default to localhost for development
+if (!frontendUrl) {
+  console.error("FRONTEND_URL is not defined in environment variables.");
+}
 
 const saltRounds = 10;
 
 // Password validation regex: min 8, max 30, at least 1 uppercase, 1 lowercase, 1 number, 1 special character
-const PASSWORD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,30}$/;
+const PASSWORD_REGEX =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,30}$/;
 
 // POST /api/auth/register
 export const registerUser = async (req, res) => {
@@ -51,7 +61,8 @@ export const registerUser = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
+        message:
+          "Password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
       });
     }
 
@@ -103,15 +114,26 @@ export const registerUser = async (req, res) => {
     await verificationToken.save();
 
     // Log the action
-    await logActivity(newUser._id, "USER_REGISTER", "User", newUser._id.toString(), { email, name, role }, req);
+    await logActivity(
+      newUser._id,
+      "USER_REGISTER",
+      "User",
+      newUser._id.toString(),
+      { email, name, role },
+      req,
+    );
 
     // console.log(`[Email Mock] Verification link for ${email}: http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`);
 
-    const verificationLink = `http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`;
+    const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationTokenStr}`;
 
     // Send verification email
     await sendEmailVerificationEmail(email, verificationLink).catch((error) => {
       console.error(`Error sending verification email to ${email}:`, error);
+    });
+
+    await sendRegistrationEmail(email, name).catch((error) => {
+      console.error(`Error sending registration email to ${email}:`, error);
     });
 
     return res.status(StatusCodes.CREATED).json({
@@ -190,14 +212,14 @@ export const loginUser = async (req, res) => {
     const accessToken = jwt.sign(
       { id: user._id, email: user.email, role: user.role, name: user.name },
       process.env.JWT_SECRET,
-      { expiresIn: "5h" }
+      { expiresIn: "5h" },
     );
 
     // Generate refreshToken
     const refreshToken = jwt.sign(
       { id: user._id },
       process.env.JWT_SECRET, // using same secret or custom, we will use process.env.JWT_SECRET
-      { expiresIn: "7d" }
+      { expiresIn: "7d" },
     );
 
     user.refreshToken = refreshToken;
@@ -219,8 +241,23 @@ export const loginUser = async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
 
-    await logActivity(user._id, "USER_LOGIN", "User", user._id.toString(), {}, req);
-
+    await logActivity(
+      user._id,
+      "USER_LOGIN",
+      "User",
+      user._id.toString(),
+      {},
+      req,
+    );
+    const deviceInfo = req.headers["user-agent"] || "Unknown device";
+    await sendLoginNotificationEmail(user.email, user.name, deviceInfo).catch(
+      (error) => {
+        console.error(
+          `Error sending login notification email to ${user.email}:`,
+          error,
+        );
+      },
+    );
     return res.status(StatusCodes.OK).json({
       success: true,
       statusCode: StatusCodes.OK,
@@ -252,7 +289,14 @@ export const logoutUser = async (req, res) => {
     if (req.user) {
       // Clear refresh token in database
       await User.findByIdAndUpdate(req.user.id, { refreshToken: null });
-      await logActivity(req.user.id, "USER_LOGOUT", "User", req.user.id, {}, req);
+      await logActivity(
+        req.user.id,
+        "USER_LOGOUT",
+        "User",
+        req.user.id,
+        {},
+        req,
+      );
     }
 
     res.clearCookie("token", {
@@ -307,7 +351,7 @@ export const refreshToken = async (req, res) => {
     const newAccessToken = jwt.sign(
       { id: user._id, email: user.email, role: user.role, name: user.name },
       process.env.JWT_SECRET,
-      { expiresIn: "5h" }
+      { expiresIn: "5h" },
     );
 
     // Set cookie
@@ -370,7 +414,10 @@ export const forgotPassword = async (req, res) => {
     const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
 
     // Mark previous tokens as used
-    await PasswordResetToken.updateMany({ userId: user._id, used: false }, { used: true });
+    await PasswordResetToken.updateMany(
+      { userId: user._id, used: false },
+      { used: true },
+    );
 
     const passwordReset = new PasswordResetToken({
       userId: user._id,
@@ -379,9 +426,18 @@ export const forgotPassword = async (req, res) => {
     });
     await passwordReset.save();
 
-    await logActivity(user._id, "FORGOT_PASSWORD_REQUEST", "User", user._id.toString(), { email }, req);
+    await logActivity(
+      user._id,
+      "FORGOT_PASSWORD_REQUEST",
+      "User",
+      user._id.toString(),
+      { email },
+      req,
+    );
 
-    console.log(`[Email Mock] Password reset link for ${email}: http://localhost:3000/api/auth/reset-password?token=${resetTokenStr}`);
+    console.log(
+      `[Email Mock] Password reset link for ${email}: http://localhost:3000/api/auth/reset-password?token=${resetTokenStr}`,
+    );
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -415,7 +471,8 @@ export const resetPassword = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "Password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
+        message:
+          "Password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
       });
     }
 
@@ -452,7 +509,14 @@ export const resetPassword = async (req, res) => {
     resetTokenDoc.used = true;
     await resetTokenDoc.save();
 
-    await logActivity(user._id, "PASSWORD_RESET_SUCCESS", "User", user._id.toString(), {}, req);
+    await logActivity(
+      user._id,
+      "PASSWORD_RESET_SUCCESS",
+      "User",
+      user._id.toString(),
+      {},
+      req,
+    );
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -511,13 +575,20 @@ export const verifyEmail = async (req, res) => {
     verificationTokenDoc.verified = true;
     await verificationTokenDoc.save();
 
-    await logActivity(user._id, "EMAIL_VERIFIED", "User", user._id.toString(), {}, req);
+    await logActivity(
+      user._id,
+      "EMAIL_VERIFIED",
+      "User",
+      user._id.toString(),
+      {},
+      req,
+    );
 
     // Delete all email verification tokens for the user
     await EmailVerificationToken.deleteMany({ userId: user._id });
 
     // redirect to a success page or send a success response
-    res.redirect('http://localhost:5173/email-verified-success'); // Adjust the URL as needed
+    res.redirect("http://localhost:5173/email-verified-success"); // Adjust the URL as needed
 
     return res.status(StatusCodes.OK).json({
       success: true,
@@ -551,7 +622,8 @@ export const changePassword = async (req, res) => {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
         statusCode: StatusCodes.BAD_REQUEST,
-        message: "New password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
+        message:
+          "New password must be 8-30 characters, including at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character",
       });
     }
 
@@ -578,7 +650,14 @@ export const changePassword = async (req, res) => {
     user.refreshToken = null; // revoke refresh token
     await user.save();
 
-    await logActivity(user._id, "PASSWORD_CHANGE", "User", user._id.toString(), {}, req);
+    await logActivity(
+      user._id,
+      "PASSWORD_CHANGE",
+      "User",
+      user._id.toString(),
+      {},
+      req,
+    );
 
     return res.status(StatusCodes.OK).json({
       success: true,

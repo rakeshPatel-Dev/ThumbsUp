@@ -3,7 +3,7 @@ import Notification from "../models/Notifications.js";
 import User from "../models/User.js";
 import { logActivity } from "../utils/activityLogger.js";
 import { StatusCodes } from "http-status-codes";
-
+import { sendTaskCreationEmailToManager } from "../services/email.service.js";
 // Helper to create notifications
 const createNotification = async (userId, title, message, type) => {
   try {
@@ -32,7 +32,14 @@ export const createTask = async (req, res) => {
       });
     }
 
-    const { title, description, priority = "medium", deadline, category, attachmentUrl } = req.body;
+    const {
+      title,
+      description,
+      priority = "medium",
+      deadline,
+      category,
+      attachmentUrl,
+    } = req.body;
 
     // Validate required fields
     if (!title || !description) {
@@ -103,9 +110,18 @@ export const createTask = async (req, res) => {
     await task.populate("createdBy", "name email");
 
     // Log activity
-    await logActivity(req.user.id, "TASK_CREATE", "Task", task._id.toString(), { title, priority }, req);
+    await logActivity(
+      req.user.id,
+      "TASK_CREATE",
+      "Task",
+      task._id.toString(),
+      { title, priority },
+      req,
+    );
 
-    console.log(`User ${req.user.id} and name ${req.user.name} . User = ${JSON.stringify(req.user)}`);
+    console.log(
+      `User ${req.user.id} and name ${req.user.name} . User = ${JSON.stringify(req.user)}`,
+    );
 
     // Notify managers
     const managers = await User.find({ role: "manager" });
@@ -114,10 +130,19 @@ export const createTask = async (req, res) => {
         manager._id,
         "New Task",
         `A new task "${task.title}" has been created by ${req.user.name}.`,
-        "task_created"
+        "task_created",
       );
     }
 
+    await sendTaskCreationEmailToManager(
+      managers,
+      task,
+      req.user.name,
+      title,
+      description,
+    ).error((err) => {
+      console.error("Error sending task creation email to managers:", err);
+    });
     // For now, let's also log a notification info
     return res.status(StatusCodes.CREATED).json({
       success: true,
@@ -236,17 +261,17 @@ export const getTask = async (req, res) => {
       attachmentUrl: t.attachmentUrl,
       createdBy: t.createdBy
         ? {
-          id: t.createdBy._id,
-          name: t.createdBy.name,
-          email: t.createdBy.email,
-        }
+            id: t.createdBy._id,
+            name: t.createdBy.name,
+            email: t.createdBy.email,
+          }
         : null,
       approvedBy: t.approvedBy
         ? {
-          id: t.approvedBy._id,
-          name: t.approvedBy.name,
-          email: t.approvedBy.email,
-        }
+            id: t.approvedBy._id,
+            name: t.approvedBy.name,
+            email: t.approvedBy.email,
+          }
         : null,
       rejectionReason: t.rejectionReason,
       createdAt: t.createdAt,
@@ -293,7 +318,10 @@ export const getTaskById = async (req, res) => {
     }
 
     // Access control: employee can only see their own tasks
-    if (req.user.role === "employee" && task.createdBy._id.toString() !== req.user.id) {
+    if (
+      req.user.role === "employee" &&
+      task.createdBy._id.toString() !== req.user.id
+    ) {
       return res.status(StatusCodes.FORBIDDEN).json({
         success: false,
         statusCode: StatusCodes.FORBIDDEN,
@@ -321,10 +349,10 @@ export const getTaskById = async (req, res) => {
           },
           approvedBy: task.approvedBy
             ? {
-              id: task.approvedBy._id,
-              name: task.approvedBy.name,
-              email: task.approvedBy.email,
-            }
+                id: task.approvedBy._id,
+                name: task.approvedBy.name,
+                email: task.approvedBy.email,
+              }
             : null,
           rejectionReason: task.rejectionReason,
           createdAt: task.createdAt,
@@ -355,7 +383,16 @@ export const updateTask = async (req, res) => {
       });
     }
 
-    const { status, title, description, priority, deadline, category, attachmentUrl, rejectionReason } = req.body;
+    const {
+      status,
+      title,
+      description,
+      priority,
+      deadline,
+      category,
+      attachmentUrl,
+      rejectionReason,
+    } = req.body;
 
     // 1. Employee Role Path
     if (req.user.role === "employee") {
@@ -374,20 +411,29 @@ export const updateTask = async (req, res) => {
           return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             statusCode: StatusCodes.BAD_REQUEST,
-            message: "Employees can only transition tasks to 'completed' status.",
+            message:
+              "Employees can only transition tasks to 'completed' status.",
           });
         }
         if (task.status !== "approved") {
           return res.status(StatusCodes.BAD_REQUEST).json({
             success: false,
             statusCode: StatusCodes.BAD_REQUEST,
-            message: "Tasks can only be marked as completed if they are in 'approved' status.",
+            message:
+              "Tasks can only be marked as completed if they are in 'approved' status.",
           });
         }
 
         task.status = "completed";
         await task.save();
-        await logActivity(req.user.id, "TASK_COMPLETED", "Task", task._id.toString(), { oldStatus: "approved", newStatus: "completed" }, req);
+        await logActivity(
+          req.user.id,
+          "TASK_COMPLETED",
+          "Task",
+          task._id.toString(),
+          { oldStatus: "approved", newStatus: "completed" },
+          req,
+        );
 
         return res.status(StatusCodes.OK).json({
           success: true,
@@ -478,7 +524,14 @@ export const updateTask = async (req, res) => {
       }
 
       await task.save();
-      await logActivity(req.user.id, "TASK_UPDATE", "Task", task._id.toString(), changes, req);
+      await logActivity(
+        req.user.id,
+        "TASK_UPDATE",
+        "Task",
+        task._id.toString(),
+        changes,
+        req,
+      );
 
       return res.status(StatusCodes.OK).json({
         success: true,
@@ -511,7 +564,8 @@ export const updateTask = async (req, res) => {
         return res.status(StatusCodes.BAD_REQUEST).json({
           success: false,
           statusCode: StatusCodes.BAD_REQUEST,
-          message: "Managers can only approve or reject tasks in pending status.",
+          message:
+            "Managers can only approve or reject tasks in pending status.",
         });
       }
 
@@ -532,12 +586,24 @@ export const updateTask = async (req, res) => {
       task.approvedBy = req.user.id;
       await task.save();
 
-      await logActivity(req.user.id, `TASK_${status.toUpperCase()}`, "Task", task._id.toString(), changes, req);
+      await logActivity(
+        req.user.id,
+        `TASK_${status.toUpperCase()}`,
+        "Task",
+        task._id.toString(),
+        changes,
+        req,
+      );
 
       const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
       const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${task.rejectionReason}` : ""}`;
       const notifType = `task_${status}`;
-      await createNotification(task.createdBy, notifTitle, notifMessage, notifType);
+      await createNotification(
+        task.createdBy,
+        notifTitle,
+        notifMessage,
+        notifType,
+      );
 
       return res.status(StatusCodes.OK).json({
         success: true,
@@ -553,7 +619,6 @@ export const updateTask = async (req, res) => {
       statusCode: StatusCodes.FORBIDDEN,
       message: "Access denied. Admin cannot update task details or status.",
     });
-
   } catch (error) {
     console.error("Update Task Error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
@@ -578,7 +643,10 @@ export const deleteTask = async (req, res) => {
     }
 
     // Only employees who created the task can delete it
-    if (req.user.role !== "employee" || task.createdBy.toString() !== req.user.id) {
+    if (
+      req.user.role !== "employee" ||
+      task.createdBy.toString() !== req.user.id
+    ) {
       return res.status(StatusCodes.FORBIDDEN).json({
         success: false,
         statusCode: StatusCodes.FORBIDDEN,
@@ -598,7 +666,14 @@ export const deleteTask = async (req, res) => {
     task.isDeleted = true;
     await task.save();
 
-    await logActivity(req.user.id, "TASK_DELETE", "Task", task._id.toString(), { softDelete: true }, req);
+    await logActivity(
+      req.user.id,
+      "TASK_DELETE",
+      "Task",
+      task._id.toString(),
+      { softDelete: true },
+      req,
+    );
 
     return res.status(StatusCodes.OK).json({
       success: true,
