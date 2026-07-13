@@ -3,7 +3,11 @@ import Notification from "../models/Notifications.js";
 import User from "../models/User.js";
 import { logActivity } from "../utils/activityLogger.js";
 import { StatusCodes } from "http-status-codes";
-import { sendTaskCreationEmailToManager } from "../services/email.service.js";
+import {
+  sendTaskCreationEmailToManager,
+  sendTaskApprovalNotificationEmail,
+  sendTaskRejectionNotificationEmail,
+} from "../services/email.service.js";
 // Helper to create notifications
 const createNotification = async (userId, title, message, type) => {
   try {
@@ -134,16 +138,11 @@ export const createTask = async (req, res) => {
       );
     }
 
-    await sendTaskCreationEmailToManager(
-      managers,
-      task,
-      req.user.name,
-      title,
-      description,
-    ).error((err) => {
-      console.error("Error sending task creation email to managers:", err);
-    });
-    // For now, let's also log a notification info
+    for (const manager of managers) {
+      await sendTaskCreationEmailToManager(manager.email, task).catch((err) => {
+        console.error(`Error sending task creation email to ${manager.email}:`, err);
+      });
+    }
     return res.status(StatusCodes.CREATED).json({
       success: true,
       statusCode: StatusCodes.CREATED,
@@ -595,15 +594,30 @@ export const updateTask = async (req, res) => {
         req,
       );
 
+      const taskCreatorId = task.createdBy;
+
+      await task.populate("createdBy", "email name");
+
       const notifTitle = `Task ${status.charAt(0).toUpperCase() + status.slice(1)}`;
       const notifMessage = `Your task "${task.title}" has been ${status}${status === "rejected" ? `. Reason: ${task.rejectionReason}` : ""}`;
       const notifType = `task_${status}`;
       await createNotification(
-        task.createdBy,
+        taskCreatorId,
         notifTitle,
         notifMessage,
         notifType,
       );
+
+      const employeeEmail = task.createdBy.email;
+      if (status === "approved") {
+        await sendTaskApprovalNotificationEmail(employeeEmail, task).catch((err) => {
+          console.error(`Error sending approval email to ${employeeEmail}:`, err);
+        });
+      } else {
+        await sendTaskRejectionNotificationEmail(employeeEmail, task).catch((err) => {
+          console.error(`Error sending rejection email to ${employeeEmail}:`, err);
+        });
+      }
 
       return res.status(StatusCodes.OK).json({
         success: true,

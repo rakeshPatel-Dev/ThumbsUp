@@ -71,7 +71,7 @@ const templates = {
         <p><a href="${verificationLink}">${verificationLink}</a></p>
         <p>Best regards,<br>ThumbsUp Team</p>
     `,
-};  
+};
 
 // ==============================
 // Email functions
@@ -96,25 +96,10 @@ export const sendTaskStatusUpdateEmail = (to, task) =>
 // Send task approval notification email
 export const sendTaskApprovalNotificationEmail = (to, task) =>
     sendEmail({ to, subject: 'Task Approved', html: templates.taskApproved(task) });
-  
+
 // Send task creation email to manager
 export const sendTaskCreationEmailToManager = (to, task) =>
     sendEmail({ to, subject: 'New Task Created', html: templates.taskApproval(task) });
-
-
-//hello
-// export const sendTaskApprovedEmailToManager = (to, task) =>
-//     sendEmail({ to, subject: 'Task Approved', html: templates.taskApproved(task) });
-
-// export const sendTaskRejectedEmailToManager = (to, task) =>
-//     sendEmail({ to, subject: 'Task Rejected', html: templates.taskRejected(task) });
-
-
-// export const sendTaskRejectedEmailToUser = (to, task) =>
-//     sendEmail({ to, subject: 'Task Rejected', html: templates.taskRejected(task) });
-
-// export const sendTaskApprovedEmailToUser = (to, task) =>
-//     sendEmail({ to, subject: 'Task Approved', html: templates.taskApproved(task) });
 
 // Send task rejection notification email
 export const sendTaskRejectionNotificationEmail = (to, task) =>
