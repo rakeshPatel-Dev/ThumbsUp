@@ -85,8 +85,8 @@
 /* ─── Light Mode ────────────────────────────────────────────────────────── */
 :root {
   /* Core shadcn tokens - mapped to ThumbsUp orange palette */
-  --background: #fcf9f8;
-  --foreground: #1c1b1b;
+  --background: #ffffff;
+  --foreground: #1c1c1c;
   --card: #ffffff;
   --card-foreground: #1c1b1b;
   --popover: #ffffff;
