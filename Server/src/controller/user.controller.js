@@ -1,4 +1,6 @@
 import User from "../models/User.js";
+import Task from "../models/Task.js";
+import Notification from "../models/Notifications.js";
 import { logActivity } from "../utils/activityLogger.js";
 import { StatusCodes } from "http-status-codes";
 
@@ -268,6 +270,61 @@ export const suspendUser = async (req, res) => {
     });
   } catch (error) {
     console.error("Suspend/Unsuspend User Error:", error);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      statusCode: StatusCodes.INTERNAL_SERVER_ERROR,
+      message: "Internal Server Error",
+    });
+  }
+};
+
+// DELETE /api/users/account
+export const deleteAccount = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+
+    if (!user) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        success: false,
+        statusCode: StatusCodes.NOT_FOUND,
+        message: "User not found",
+      });
+    }
+
+    if (user.role === "admin") {
+      return res.status(StatusCodes.FORBIDDEN).json({
+        success: false,
+        statusCode: StatusCodes.FORBIDDEN,
+        message: "Admins cannot delete their own account.",
+      });
+    }
+
+    const userId = user._id;
+
+    await logActivity(
+      userId,
+      "ACCOUNT_DELETED",
+      "User",
+      userId.toString(),
+      { role: user.role },
+      req,
+    );
+
+    await Task.updateMany({ createdBy: userId }, { isDeleted: true });
+    await Notification.deleteMany({ userId });
+
+    await User.findByIdAndDelete(userId);
+
+    res.clearCookie("token");
+    res.clearCookie("refreshToken");
+
+    return res.status(StatusCodes.OK).json({
+      success: true,
+      statusCode: StatusCodes.OK,
+      message: "Account deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete Account Error:", error);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       success: false,
       statusCode: StatusCodes.INTERNAL_SERVER_ERROR,

@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useGetProfileQuery, useUpdateProfileMutation } from '@/store/api/userApi';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { useGetProfileQuery, useUpdateProfileMutation, useDeleteAccountMutation } from '@/store/api/userApi';
 import { useChangePasswordMutation } from '@/store/api/authApi';
+import { logout } from '@/store/slices/authSlice';
 import { toast } from 'sonner';
 import {
   User,
@@ -9,15 +12,20 @@ import {
   Loader2,
   KeyRound,
   ShieldCheck,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 export function ProfilePage() {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { data, isLoading } = useGetProfileQuery({});
   const [updateProfile, { isLoading: updatingProfile }] = useUpdateProfileMutation();
   const [changePassword, { isLoading: changingPassword }] = useChangePasswordMutation();
+  const [deleteAccount, { isLoading: deletingAccount }] = useDeleteAccountMutation();
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -27,6 +35,9 @@ export function ProfilePage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  // Delete account confirmation
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     if (data?.data?.user) {
@@ -69,6 +80,18 @@ export function ProfilePage() {
       setConfirmPassword('');
     } catch (err: any) {
       toast.error(err?.data?.message ?? 'Failed to change password');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount({}).unwrap();
+      dispatch(logout());
+      toast.success('Account deleted successfully');
+      navigate('/login');
+    } catch (err: any) {
+      toast.error(err?.data?.message ?? 'Failed to delete account');
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -218,6 +241,51 @@ export function ProfilePage() {
               </Button>
             </form>
           </div>
+
+          {/* Delete Account */}
+          {role !== 'admin' && (
+            <div className="bg-card border border-destructive/30 rounded-xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <Trash2 className="h-4 w-4 text-destructive" />
+                <h2 className="text-base font-semibold text-foreground">Delete Account</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Permanently remove your account and all associated data. This action cannot be undone.
+              </p>
+              {showDeleteConfirm ? (
+                <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+                  <AlertTriangle className="h-5 w-5 text-destructive shrink-0" />
+                  <p className="text-sm text-foreground font-medium flex-1">Are you sure?</p>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleDeleteAccount}
+                    disabled={deletingAccount}
+                  >
+                    {deletingAccount ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Confirm'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    disabled={deletingAccount}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-destructive/50 text-destructive hover:bg-destructive/10"
+                  onClick={() => setShowDeleteConfirm(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Delete My Account
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

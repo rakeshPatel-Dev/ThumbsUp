@@ -18,7 +18,7 @@ export const userApi = apiSlice.injectEndpoints({
       query: (params = {}) => ({
         url: "/users",
         method: "GET",
-        params, // RTK query serializes this automatically into query parameters
+        params,
       }),
       providesTags: (result) =>
         result
@@ -37,20 +37,26 @@ export const userApi = apiSlice.injectEndpoints({
       invalidatesTags: (_result, _error, { userId }) => [
         { type: "User", id: userId },
         { type: "User", id: "LIST" },
-        "Dashboard", // Role changes might update admin stats
+        "Dashboard",
       ],
     }),
     suspendUser: builder.mutation({
       query: ({ userId, action }) => ({
         url: `/users/${userId}/suspend`,
         method: "PUT",
-        body: { action }, // "suspend" or "unsuspend"
+        body: { action },
       }),
       invalidatesTags: (_result, _error, { userId }) => [
         { type: "User", id: userId },
         { type: "User", id: "LIST" },
-        "Dashboard", // Suspension updates dashboard active status count
+        "Dashboard",
       ],
+    }),
+    deleteAccount: builder.mutation({
+      query: () => ({
+        url: "/users/account",
+        method: "DELETE",
+      }),
     }),
   }),
   overrideExisting: false,
@@ -62,4 +68,5 @@ export const {
   useGetUsersQuery,
   useUpdateUserRoleMutation,
   useSuspendUserMutation,
+  useDeleteAccountMutation,
 } = userApi;
