@@ -3,6 +3,7 @@ import Task from "../models/Task.js";
 import Notification from "../models/Notifications.js";
 import { logActivity } from "../utils/activityLogger.js";
 import { StatusCodes } from "http-status-codes";
+import { sendAccountDeletedEmail } from "../services/email.service.js";
 
 // GET /api/users/profile
 export const Profile = async (req, res) => {
@@ -309,6 +310,10 @@ export const deleteAccount = async (req, res) => {
       { role: user.role },
       req,
     );
+
+    await sendAccountDeletedEmail(user.email, user.name).catch((err) => {
+      console.error(`Error sending account deletion email to ${user.email}:`, err);
+    });
 
     await Task.updateMany({ createdBy: userId }, { isDeleted: true });
     await Notification.deleteMany({ userId });

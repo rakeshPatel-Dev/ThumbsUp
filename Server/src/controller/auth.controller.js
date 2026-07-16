@@ -12,11 +12,16 @@ import {
   sendRegistrationEmail,
   sendLoginNotificationEmail,
   sendForgotPasswordEmail,
+  sendChangePasswordNotificationEmail,
 } from "../services/email.service.js";
 
-const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173/api"; // Default to localhost for development
+const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173"; // Default to localhost for development
+const backendUrl = process.env.BACKEND_URL || "http://localhost:3000/api"; // Default to localhost for development
 if (!frontendUrl) {
   console.error("FRONTEND_URL is not defined in environment variables.");
+}
+if (!backendUrl) {
+  console.error("BACKEND_URL is not defined in environment variables.");
 }
 
 const saltRounds = 10;
@@ -124,9 +129,7 @@ export const registerUser = async (req, res) => {
       req,
     );
 
-    // console.log(`[Email Mock] Verification link for ${email}: http://localhost:3000/api/auth/verify-email?token=${verificationTokenStr}`);
-
-    const verificationLink = `${frontendUrl}/auth/verify-email?token=${verificationTokenStr}`;
+    const verificationLink = `${backendUrl}/auth/verify-email?token=${verificationTokenStr}`;
 
     // Send verification email
     await sendEmailVerificationEmail(email, verificationLink).catch((error) => {
@@ -410,9 +413,10 @@ export const forgotPassword = async (req, res) => {
       });
     }
 
-    // Generate Password Reset Token
-    const resetTokenStr = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 1 * 60 * 60 * 1000); // 1 hour
+    // Generate Password Reset Token of 6 characters
+    const resetTokenStr = crypto.randomBytes(3).toString("hex");
+    // Set token expiry to 10 minutes
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
     // Mark previous tokens as used
     await PasswordResetToken.updateMany(
@@ -519,6 +523,11 @@ export const resetPassword = async (req, res) => {
       req,
     );
 
+    // Send notification email about password change
+    await sendChangePasswordNotificationEmail(user.email, user.name).catch((error) => {
+      console.error(`Error sending password change notification email to ${user.email}:`, error);
+    });
+
     return res.status(StatusCodes.OK).json({
       success: true,
       statusCode: StatusCodes.OK,
@@ -588,8 +597,8 @@ export const verifyEmail = async (req, res) => {
     // Delete all email verification tokens for the user
     await EmailVerificationToken.deleteMany({ userId: user._id });
 
-    // redirect to a success page or send a success response
-    res.redirect("http://localhost:5173/email-verified-success"); // Adjust the URL as needed
+    // redirect to a success page of the frontend application
+    res.redirect(`${frontendUrl}/email-verified-success`); // Adjust the URL as needed
 
     return res.status(StatusCodes.OK).json({
       success: true,

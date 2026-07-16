@@ -43,13 +43,6 @@ const templates = {
         <p><strong>Description:</strong> ${task.description || 'N/A'}</p>
         <p>Best regards,<br>ThumbsUp Team</p>
     `,
-    taskStatus: (task) => `
-        <p>Hi,</p>
-        <p>Your task status has been updated:</p>
-        <p><strong>Title:</strong> ${task.title}</p>
-        <p><strong>Status:</strong> ${task.status}</p>
-        <p>Best regards,<br>ThumbsUp Team</p>
-    `,
     taskApproved: (task) => `
         <p>Hi,</p>
         <p>Your task has been approved:</p>
@@ -80,6 +73,17 @@ const templates = {
         <p>If you didn't request this, please ignore this email.</p>
         <p>Best regards,<br>ThumbsUp Team</p>
     `,
+    changePasswordNotification: (username) => `
+        <p>Hi ${username},</p>
+        <p>Your password has been successfully changed.</p>
+        <p>Best regards,<br>ThumbsUp Team</p>
+    `,
+    accountDeleted: (username) => `
+        <p>Hi ${username},</p>
+        <p>Your account has been permanently deleted. All your tasks and notifications have been removed.</p>
+        <p>If you did not request this, please contact support immediately.</p>
+        <p>Best regards,<br>ThumbsUp Team</p>
+    `,
 };
 
 // ==============================
@@ -93,14 +97,6 @@ export const sendRegistrationEmail = (to, username) =>
 // Send login notification email
 export const sendLoginNotificationEmail = (to, username, deviceInfo) =>
     sendEmail({ to, subject: 'New Login Notification', html: templates.login(username, deviceInfo) });
-
-// Send task approval email
-export const sendTaskApprovalEmail = (to, task) =>
-    sendEmail({ to, subject: 'New Task Approval Request', html: templates.taskApproval(task) });
-
-// Send task status update email
-export const sendTaskStatusUpdateEmail = (to, task) =>
-    sendEmail({ to, subject: 'Task Status Update', html: templates.taskStatus(task) });
 
 // Send task approval notification email
 export const sendTaskApprovalNotificationEmail = (to, task) =>
@@ -121,3 +117,11 @@ export const sendEmailVerificationEmail = (to, verificationLink) =>
 // Send forgot password email
 export const sendForgotPasswordEmail = (to, token) =>
     sendEmail({ to, subject: 'Reset Your Password', html: templates.forgotPassword(token) });
+
+// Send change password notification email
+export const sendChangePasswordNotificationEmail = (to, username) =>
+    sendEmail({ to, subject: 'Password Changed Successfully', html: templates.changePasswordNotification(username) });
+
+// Send account deleted email
+export const sendAccountDeletedEmail = (to, username) =>
+    sendEmail({ to, subject: 'Account Deleted', html: templates.accountDeleted(username) });
