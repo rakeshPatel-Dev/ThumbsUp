@@ -11,6 +11,7 @@ import {
   sendEmailVerificationEmail,
   sendRegistrationEmail,
   sendLoginNotificationEmail,
+  sendForgotPasswordEmail,
 } from "../services/email.service.js";
 
 const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173/api"; // Default to localhost for development
@@ -435,9 +436,9 @@ export const forgotPassword = async (req, res) => {
       req,
     );
 
-    console.log(
-      `[Email Mock] Password reset link for ${email}: http://localhost:3000/api/auth/reset-password?token=${resetTokenStr}`,
-    );
+    await sendForgotPasswordEmail(email, resetTokenStr).catch((error) => {
+      console.error(`Error sending password reset email to ${email}:`, error);
+    });
 
     return res.status(StatusCodes.OK).json({
       success: true,

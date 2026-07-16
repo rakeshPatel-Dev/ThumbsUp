@@ -71,6 +71,15 @@ const templates = {
         <p><a href="${verificationLink}">${verificationLink}</a></p>
         <p>Best regards,<br>ThumbsUp Team</p>
     `,
+    // for forgot password
+    forgotPassword: (token) => `
+        <p>Hi,</p>
+        <p>You requested a password reset. Use the token below to reset your password:</p>
+        <p style="font-size:18px; font-weight:bold; letter-spacing:2px; background:#f4f4f4; padding:12px; text-align:center; border-radius:6px;">${token}</p>
+        <p>This token expires in 1 hour.</p>
+        <p>If you didn't request this, please ignore this email.</p>
+        <p>Best regards,<br>ThumbsUp Team</p>
+    `,
 };
 
 // ==============================
@@ -108,3 +117,7 @@ export const sendTaskRejectionNotificationEmail = (to, task) =>
 // Send email verification email
 export const sendEmailVerificationEmail = (to, verificationLink) =>
     sendEmail({ to, subject: 'Email Verification', html: templates.emailVerification(verificationLink) });
+
+// Send forgot password email
+export const sendForgotPasswordEmail = (to, token) =>
+    sendEmail({ to, subject: 'Reset Your Password', html: templates.forgotPassword(token) });
